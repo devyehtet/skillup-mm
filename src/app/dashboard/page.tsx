@@ -1,19 +1,14 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import MockExamCard from "@/components/MockExamCard";
 import ProgressBar from "@/components/ProgressBar";
-import { getCurrentLearner } from "@/lib/session";
+import { requireLearner } from "@/lib/session";
 import SectionTitle from "@/components/SectionTitle";
 import StatCard from "@/components/StatCard";
 import { getStudentDashboard } from "@/lib/db";
 
 export default async function DashboardPage() {
-  const learner = await getCurrentLearner();
-
-  if (!learner) {
-    redirect("/register");
-  }
+  const learner = await requireLearner("/dashboard");
 
   const dashboard = await getStudentDashboard(learner);
   const [primaryFocus, secondaryFocus] = dashboard.focusCards;

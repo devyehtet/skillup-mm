@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import SectionTitle from "@/components/SectionTitle";
 import { courses, lessonResources } from "@/lib/mock-data";
+import { requireLearner } from "@/lib/session";
 
 interface LessonPageProps {
   params: Promise<{ slug: string }>;
@@ -11,6 +12,7 @@ interface LessonPageProps {
 
 export default async function LessonPage({ params }: LessonPageProps) {
   const { slug } = await params;
+  await requireLearner(`/lesson/${slug}`);
   const course = courses[0];
 
   if (!slug) {

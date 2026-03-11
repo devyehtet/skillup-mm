@@ -1,17 +1,12 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 
 import ProgressBar from "@/components/ProgressBar";
 import { getStudentDashboard } from "@/lib/db";
-import { getCurrentLearner } from "@/lib/session";
+import { requireLearner } from "@/lib/session";
 import SectionTitle from "@/components/SectionTitle";
 
 export default async function MyLearningPage() {
-  const learner = await getCurrentLearner();
-
-  if (!learner) {
-    redirect("/register");
-  }
+  const learner = await requireLearner("/my-learning");
 
   const dashboard = await getStudentDashboard(learner);
 

@@ -55,6 +55,28 @@ export async function getCurrentAdmin() {
   return decodeAdminCookie(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
 }
 
+export function normalizeReturnPath(value?: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return null;
+  }
+
+  return value;
+}
+
+export async function requireLearner(returnPath?: string) {
+  const learner = await getCurrentLearner();
+
+  if (!learner) {
+    const normalizedReturnPath = normalizeReturnPath(returnPath);
+
+    redirect(
+      normalizedReturnPath ? `/register?next=${encodeURIComponent(normalizedReturnPath)}` : "/register",
+    );
+  }
+
+  return learner;
+}
+
 export async function requireSuperAdmin() {
   const admin = await getCurrentAdmin();
 

@@ -1,8 +1,11 @@
 import DataTable from "@/components/DataTable";
 import SectionTitle from "@/components/SectionTitle";
 import { certificateColumns, certificates } from "@/lib/mock-data";
+import { requireLearner } from "@/lib/session";
 
-export default function CertificatesPage() {
+export default async function CertificatesPage() {
+  await requireLearner("/certificates");
+
   return (
     <div className="container-shell py-16">
       <SectionTitle

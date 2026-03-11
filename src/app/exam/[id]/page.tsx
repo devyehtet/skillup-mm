@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import MockExamAttempt from "@/components/MockExamAttempt";
 import SectionTitle from "@/components/SectionTitle";
 import { getMockExamById, getMockExamQuestions } from "@/lib/mock-data";
+import { requireLearner } from "@/lib/session";
 
 interface ExamPageProps {
   params: Promise<{ id: string }>;
@@ -10,6 +11,7 @@ interface ExamPageProps {
 
 export default async function ExamPage({ params }: ExamPageProps) {
   const { id } = await params;
+  await requireLearner(`/exam/${id}`);
   const exam = getMockExamById(id);
 
   if (!exam) {

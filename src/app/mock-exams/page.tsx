@@ -1,8 +1,11 @@
 import MockExamCard from "@/components/MockExamCard";
 import SectionTitle from "@/components/SectionTitle";
 import { googlePracticeExams, metaPracticeExams, starterPracticeExams, studyRecommendations } from "@/lib/mock-data";
+import { requireLearner } from "@/lib/session";
 
-export default function MockExamsPage() {
+export default async function MockExamsPage() {
+  await requireLearner("/mock-exams");
+
   return (
     <div className="container-shell py-16">
       <div className="grid gap-8 lg:grid-cols-[1fr_0.75fr] lg:items-start">

@@ -12,6 +12,7 @@ import {
   resultBreakdownColumns,
   studyRecommendations,
 } from "@/lib/mock-data";
+import { requireLearner } from "@/lib/session";
 
 interface ResultPageProps {
   params: Promise<{ id: string }>;
@@ -19,6 +20,7 @@ interface ResultPageProps {
 
 export default async function ResultPage({ params }: ResultPageProps) {
   const { id } = await params;
+  await requireLearner(`/results/${id}`);
   const exam = getMockExamById(id);
   const result = getResultSummaryByExamId(id);
   const resultHighlights = getResultHighlightsForExam(id);

@@ -1,8 +1,16 @@
 import SectionTitle from "@/components/SectionTitle";
 import QuizCard from "@/components/QuizCard";
 import { quizQuestions } from "@/lib/mock-data";
+import { requireLearner } from "@/lib/session";
 
-export default function QuizPage() {
+interface QuizPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function QuizPage({ params }: QuizPageProps) {
+  const { id } = await params;
+  await requireLearner(`/quiz/${id}`);
+
   return (
     <div className="container-shell py-16">
       <SectionTitle

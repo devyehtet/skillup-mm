@@ -1,15 +1,20 @@
 import { redirect } from "next/navigation";
 
 import RegisterForm from "@/components/RegisterForm";
-import { getCurrentLearner } from "@/lib/session";
+import { getCurrentLearner, normalizeReturnPath } from "@/lib/session";
 import SectionTitle from "@/components/SectionTitle";
 import { registerBenefits } from "@/lib/mock-data";
 
-export default async function RegisterPage() {
-  const learner = await getCurrentLearner();
+interface RegisterPageProps {
+  searchParams: Promise<{ next?: string }>;
+}
+
+export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+  const [learner, resolvedSearchParams] = await Promise.all([getCurrentLearner(), searchParams]);
+  const nextPath = normalizeReturnPath(resolvedSearchParams.next) ?? "/mock-exams";
 
   if (learner) {
-    redirect("/dashboard");
+    redirect(nextPath === "/register" ? "/dashboard" : nextPath);
   }
 
   return (
@@ -33,7 +38,7 @@ export default async function RegisterPage() {
           ))}
         </section>
 
-        <RegisterForm />
+        <RegisterForm nextPath={nextPath} />
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { saveRegisteredLearner } from "@/lib/registered-learners";
-import { encodeLearnerCookie, LEARNER_COOKIE_NAME } from "@/lib/session";
+import { encodeLearnerCookie, LEARNER_COOKIE_NAME, normalizeReturnPath } from "@/lib/session";
 import type { RegisteredLearner } from "@/types";
 
 export interface RegisterActionState {
@@ -28,6 +28,7 @@ export async function registerLearner(
   _previousState: RegisterActionState,
   formData: FormData,
 ): Promise<RegisterActionState> {
+  const requestedPath = normalizeReturnPath(readValue(formData, "nextPath")) ?? "/mock-exams";
   const values = {
     currentLevel: readValue(formData, "currentLevel"),
     email: readValue(formData, "email"),
@@ -59,5 +60,5 @@ export async function registerLearner(
     sameSite: "lax",
   });
 
-  redirect("/mock-exams");
+  redirect(requestedPath === "/register" ? "/mock-exams" : requestedPath);
 }

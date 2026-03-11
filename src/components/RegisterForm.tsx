@@ -11,6 +11,16 @@ const initialState: RegisterActionState = {};
 const inputClassName =
   "brand-input mt-2 rounded-2xl px-4 py-3.5 outline-none";
 
+const targetPlatformOptions = [
+  "Google Ads",
+  "Meta Ads",
+  "TikTok Ads",
+  "LinkedIn Ads",
+  "Digital Marketing Fundamentals",
+];
+
+const currentLevelOptions = ["Beginner", "Intermediate", "Advanced"];
+
 function SubmitButton() {
   const { pending } = useFormStatus();
 
@@ -25,7 +35,11 @@ function SubmitButton() {
   );
 }
 
-export default function RegisterForm() {
+interface RegisterFormProps {
+  nextPath: string;
+}
+
+export default function RegisterForm({ nextPath }: RegisterFormProps) {
   const [state, formAction] = useActionState(registerLearner, initialState);
 
   return (
@@ -35,10 +49,11 @@ export default function RegisterForm() {
         Create your account
       </h2>
       <p className="mt-3 text-sm leading-8 text-slate-600 md:text-[1rem]">
-        Fill in your details once. We will sign you in and send you straight to the mock exam catalog.
+        Fill in your details once. We will sign you in and send you straight to your requested practice area.
       </p>
 
       <form action={formAction} className="mt-7 space-y-6">
+        <input name="nextPath" type="hidden" value={nextPath} />
         <div className="grid gap-5 md:grid-cols-2">
           <label className="block text-sm font-medium leading-7 text-slate-700">
             <span>Full name</span>
@@ -66,24 +81,38 @@ export default function RegisterForm() {
 
           <label className="block text-sm font-medium leading-7 text-slate-700">
             <span>Target platform</span>
-            <input
+            <select
               className={inputClassName}
               defaultValue={state.values?.targetPlatform ?? ""}
               name="targetPlatform"
-              placeholder="Google Ads / Meta Ads / TikTok"
-              type="text"
-            />
+            >
+              <option value="" disabled>
+                Select target platform
+              </option>
+              {targetPlatformOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="block text-sm font-medium leading-7 text-slate-700">
             <span>Current level</span>
-            <input
+            <select
               className={inputClassName}
               defaultValue={state.values?.currentLevel ?? ""}
               name="currentLevel"
-              placeholder="Beginner / Intermediate"
-              type="text"
-            />
+            >
+              <option value="" disabled>
+                Select your level
+              </option>
+              {currentLevelOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
