@@ -61,9 +61,6 @@ export default async function Navbar() {
             </>
           ) : (
             <>
-              <Link href="/admin/login" className="nav-link hidden md:inline-flex">
-                Admin login
-              </Link>
               <Link href="/register" className="btn-secondary hidden md:inline-flex">
                 Register
               </Link>

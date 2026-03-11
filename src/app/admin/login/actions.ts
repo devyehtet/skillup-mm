@@ -13,8 +13,8 @@ function readValue(formData: FormData, key: string) {
 }
 
 export async function loginAdmin(formData: FormData) {
-  const email = readValue(formData, "email");
-  const password = readValue(formData, "password");
+  const email = readValue(formData, "admin_email") || readValue(formData, "email");
+  const password = readValue(formData, "admin_password") || readValue(formData, "password");
   const admin = authenticateAdmin(email, password);
 
   if (!admin) {

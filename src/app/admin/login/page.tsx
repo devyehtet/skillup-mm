@@ -49,17 +49,17 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
             </div>
           ) : null}
 
-          <form action={loginAdmin} className="mt-6 space-y-5">
+          <form action={loginAdmin} autoComplete="off" className="mt-6 space-y-5">
             <div>
               <label htmlFor="email" className="text-sm font-semibold text-slate-700">
                 Email
               </label>
               <input
                 id="email"
-                name="email"
+                name="admin_email"
                 type="email"
                 required
-                defaultValue="info@yehtet.com"
+                autoComplete="off"
                 className="brand-input mt-2 rounded-2xl px-4 py-3"
               />
             </div>
@@ -70,10 +70,10 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
               </label>
               <input
                 id="password"
-                name="password"
+                name="admin_password"
                 type="password"
                 required
-                defaultValue="12345"
+                autoComplete="new-password"
                 className="brand-input mt-2 rounded-2xl px-4 py-3"
               />
             </div>
