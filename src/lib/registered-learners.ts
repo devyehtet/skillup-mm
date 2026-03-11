@@ -7,32 +7,26 @@ import { adminUsers } from "@/lib/mock-data";
 import type { RegisteredLearner, TableRow } from "@/types";
 
 const REGISTERED_LEARNERS_FILE = path.join(process.cwd(), "data", "registered-learners.json");
+let memoryRegisteredLearners: RegisteredLearner[] = [];
 
 async function ensureRegisteredLearnersFile() {
-  await mkdir(path.dirname(REGISTERED_LEARNERS_FILE), { recursive: true });
-
   try {
+    await mkdir(path.dirname(REGISTERED_LEARNERS_FILE), { recursive: true });
+
     await readFile(REGISTERED_LEARNERS_FILE, "utf8");
   } catch {
-    await writeFile(REGISTERED_LEARNERS_FILE, "[]\n", "utf8");
+    try {
+      await writeFile(REGISTERED_LEARNERS_FILE, "[]\n", "utf8");
+      return true;
+    } catch {
+      return false;
+    }
   }
+
+  return true;
 }
 
-export async function getRegisteredLearners() {
-  await ensureRegisteredLearnersFile();
-
-  try {
-    const fileContents = await readFile(REGISTERED_LEARNERS_FILE, "utf8");
-    const parsedValue = JSON.parse(fileContents);
-
-    return Array.isArray(parsedValue) ? (parsedValue as RegisteredLearner[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-export async function saveRegisteredLearner(learner: RegisteredLearner) {
-  const learners = await getRegisteredLearners();
+function mergeRegisteredLearner(learners: RegisteredLearner[], learner: RegisteredLearner) {
   const normalizedEmail = learner.email.trim().toLowerCase();
   const nextLearners = [...learners];
   const existingIndex = nextLearners.findIndex((item) => item.email.trim().toLowerCase() === normalizedEmail);
@@ -43,7 +37,42 @@ export async function saveRegisteredLearner(learner: RegisteredLearner) {
     nextLearners.unshift(learner);
   }
 
-  await writeFile(REGISTERED_LEARNERS_FILE, JSON.stringify(nextLearners, null, 2), "utf8");
+  return nextLearners;
+}
+
+export async function getRegisteredLearners() {
+  const canUseFileSystem = await ensureRegisteredLearnersFile();
+
+  if (!canUseFileSystem) {
+    return [...memoryRegisteredLearners];
+  }
+
+  try {
+    const fileContents = await readFile(REGISTERED_LEARNERS_FILE, "utf8");
+    const parsedValue = JSON.parse(fileContents);
+
+    if (Array.isArray(parsedValue)) {
+      memoryRegisteredLearners = parsedValue as RegisteredLearner[];
+
+      return [...memoryRegisteredLearners];
+    }
+
+    return [...memoryRegisteredLearners];
+  } catch {
+    return [...memoryRegisteredLearners];
+  }
+}
+
+export async function saveRegisteredLearner(learner: RegisteredLearner) {
+  const learners = await getRegisteredLearners();
+  const nextLearners = mergeRegisteredLearner(learners, learner);
+  memoryRegisteredLearners = nextLearners;
+
+  try {
+    await writeFile(REGISTERED_LEARNERS_FILE, JSON.stringify(nextLearners, null, 2), "utf8");
+  } catch (error) {
+    console.error("Unable to persist registered learners to disk. Falling back to in-memory storage.", error);
+  }
 }
 
 function formatRegisteredLearnerRow(learner: RegisteredLearner): TableRow {
