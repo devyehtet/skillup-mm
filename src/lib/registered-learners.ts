@@ -4,8 +4,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { adminUsers } from "@/lib/mock-data";
+import { formatRegisteredLearnerRow, mergeRegisteredLearners, normalizeLearnerEmail } from "@/lib/registered-learner-utils";
 import { hasConfiguredDatabaseUrl, prisma } from "@/lib/prisma";
-import type { RegisteredLearner, TableRow } from "@/types";
+import type { RegisteredLearner } from "@/types";
 
 const REGISTERED_LEARNERS_FILE = path.join(process.cwd(), "data", "registered-learners.json");
 let memoryRegisteredLearners: RegisteredLearner[] = [];
@@ -26,20 +27,6 @@ async function ensureRegisteredLearnersFile() {
   }
 
   return true;
-}
-
-function mergeRegisteredLearner(learners: RegisteredLearner[], learner: RegisteredLearner) {
-  const normalizedEmail = learner.email.trim().toLowerCase();
-  const nextLearners = [...learners];
-  const existingIndex = nextLearners.findIndex((item) => item.email.trim().toLowerCase() === normalizedEmail);
-
-  if (existingIndex >= 0) {
-    nextLearners[existingIndex] = learner;
-  } else {
-    nextLearners.unshift(learner);
-  }
-
-  return nextLearners;
 }
 
 function mapRecordToLearner(record: {
@@ -164,9 +151,9 @@ export async function saveRegisteredLearner(learner: RegisteredLearner) {
         },
       });
 
-      memoryRegisteredLearners = mergeRegisteredLearner(memoryRegisteredLearners, {
+      memoryRegisteredLearners = mergeRegisteredLearners(memoryRegisteredLearners, {
         ...learner,
-        email: learner.email.trim().toLowerCase(),
+        email: normalizeLearnerEmail(learner.email),
       });
 
       return;
@@ -176,7 +163,7 @@ export async function saveRegisteredLearner(learner: RegisteredLearner) {
   }
 
   const learners = await getRegisteredLearners();
-  const nextLearners = mergeRegisteredLearner(learners, learner);
+  const nextLearners = mergeRegisteredLearners(learners, learner);
   memoryRegisteredLearners = nextLearners;
 
   try {
@@ -184,16 +171,6 @@ export async function saveRegisteredLearner(learner: RegisteredLearner) {
   } catch (error) {
     console.error("Unable to persist registered learners to disk. Falling back to in-memory storage.", error);
   }
-}
-
-function formatRegisteredLearnerRow(learner: RegisteredLearner): TableRow {
-  return {
-    name: learner.fullName,
-    email: learner.email,
-    role: "Student",
-    organization: "Self-registered",
-    status: learner.currentLevel,
-  };
 }
 
 export async function getAdminUserRows() {

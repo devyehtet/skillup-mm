@@ -5,6 +5,8 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { registerLearner, type RegisterActionState } from "@/app/register/actions";
+import { mergeRegisteredLearners, REGISTERED_LEARNERS_STORAGE_KEY } from "@/lib/registered-learner-utils";
+import type { RegisteredLearner } from "@/types";
 
 const initialState: RegisterActionState = {};
 
@@ -42,6 +44,42 @@ interface RegisterFormProps {
 export default function RegisterForm({ nextPath }: RegisterFormProps) {
   const [state, formAction] = useActionState(registerLearner, initialState);
 
+  const persistLearnerInBrowser = (form: HTMLFormElement) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const formData = new FormData(form);
+    const fullName = String(formData.get("fullName") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim();
+    const targetPlatform = String(formData.get("targetPlatform") ?? "").trim();
+    const currentLevel = String(formData.get("currentLevel") ?? "").trim();
+    const purpose = String(formData.get("purpose") ?? "").trim();
+
+    if (!fullName || !email || !targetPlatform || !currentLevel) {
+      return;
+    }
+
+    const learner: RegisteredLearner = {
+      currentLevel,
+      email,
+      fullName,
+      purpose,
+      registeredAt: new Date().toISOString(),
+      targetPlatform,
+    };
+
+    try {
+      const rawValue = window.localStorage.getItem(REGISTERED_LEARNERS_STORAGE_KEY);
+      const existingLearners = rawValue ? (JSON.parse(rawValue) as RegisteredLearner[]) : [];
+      const nextLearners = mergeRegisteredLearners(existingLearners, learner);
+
+      window.localStorage.setItem(REGISTERED_LEARNERS_STORAGE_KEY, JSON.stringify(nextLearners));
+    } catch {
+      // Ignore browser storage issues and let the server-side registration continue.
+    }
+  };
+
   return (
     <section className="card-surface rounded-[1.5rem] p-6 sm:p-8">
       <span className="soft-chip">Account setup</span>
@@ -52,7 +90,13 @@ export default function RegisterForm({ nextPath }: RegisterFormProps) {
         Fill in your details once. We will sign you in and send you straight to your requested practice area.
       </p>
 
-      <form action={formAction} className="mt-7 space-y-6">
+      <form
+        action={formAction}
+        className="mt-7 space-y-6"
+        onSubmit={(event) => {
+          persistLearnerInBrowser(event.currentTarget);
+        }}
+      >
         <input name="nextPath" type="hidden" value={nextPath} />
         <div className="grid gap-5 md:grid-cols-2">
           <label className="block text-sm font-medium leading-7 text-slate-700">

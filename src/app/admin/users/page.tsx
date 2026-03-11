@@ -1,4 +1,4 @@
-import DataTable from "@/components/DataTable";
+import AdminUsersTable from "@/components/AdminUsersTable";
 import SectionTitle from "@/components/SectionTitle";
 import Subnav from "@/components/Subnav";
 import { adminUserColumns } from "@/lib/mock-data";
@@ -32,7 +32,7 @@ export default async function AdminUsersPage() {
         <Subnav items={adminNav} currentHref="/admin/users" />
       </div>
       <div className="mt-10">
-        <DataTable title="Platform users" columns={adminUserColumns} rows={adminRows} />
+        <AdminUsersTable title="Platform users" columns={adminUserColumns} rows={adminRows} />
       </div>
     </div>
   );
