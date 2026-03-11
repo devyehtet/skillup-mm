@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { saveRegisteredLearner } from "@/lib/registered-learners";
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
   }
 
   await saveRegisteredLearner(learner);
+  revalidatePath("/admin/users");
 
   const response = NextResponse.json({ ok: true });
 

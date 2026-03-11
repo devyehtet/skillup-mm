@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -52,6 +53,7 @@ export async function registerLearner(
   const cookieStore = await cookies();
 
   await saveRegisteredLearner(learner);
+  revalidatePath("/admin/users");
 
   cookieStore.set(LEARNER_COOKIE_NAME, encodeLearnerCookie(learner), {
     httpOnly: true,
