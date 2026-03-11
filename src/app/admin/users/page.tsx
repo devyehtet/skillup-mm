@@ -5,6 +5,8 @@ import { adminUserColumns } from "@/lib/mock-data";
 import { getAdminUserRows } from "@/lib/registered-learners";
 import { requireSuperAdmin } from "@/lib/session";
 
+export const dynamic = "force-dynamic";
+
 const adminNav = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/organizations", label: "Organizations" },

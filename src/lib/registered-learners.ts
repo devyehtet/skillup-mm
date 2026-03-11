@@ -4,12 +4,12 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { adminUsers } from "@/lib/mock-data";
-import { prisma } from "@/lib/prisma";
+import { hasConfiguredDatabaseUrl, prisma } from "@/lib/prisma";
 import type { RegisteredLearner, TableRow } from "@/types";
 
 const REGISTERED_LEARNERS_FILE = path.join(process.cwd(), "data", "registered-learners.json");
 let memoryRegisteredLearners: RegisteredLearner[] = [];
-const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const hasDatabaseUrl = hasConfiguredDatabaseUrl;
 
 async function ensureRegisteredLearnersFile() {
   try {
