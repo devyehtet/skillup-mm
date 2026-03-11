@@ -1,0 +1,374 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GlobalRole {
+  SUPER_ADMIN
+  CONTENT_MANAGER
+  REVIEWER
+  LEARNER
+}
+
+enum MembershipRole {
+  SCHOOL_ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+  UNDER_REVIEW
+}
+
+enum CertificateStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ISSUED
+  REJECTED
+}
+
+enum QuestionType {
+  MCQ
+  MULTI_SELECT
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+model Organization {
+  id               String                   @id @default(cuid())
+  name             String
+  slug             String                   @unique
+  logoUrl          String?
+  contactEmail     String?
+  status           String                   @default("ACTIVE")
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  memberships      OrganizationMembership[]
+  batches          Batch[]
+  assignments      CourseAssignment[]
+  enrollments      Enrollment[]
+  attempts         Attempt[]
+  certificates     Certificate[]
+  approvalRequests ApprovalRequest[]
+}
+
+model User {
+  id               String                   @id @default(cuid())
+  fullName         String
+  email            String                   @unique
+  passwordHash     String?
+  globalRole       GlobalRole               @default(LEARNER)
+  status           String                   @default("ACTIVE")
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  memberships      OrganizationMembership[]
+  batchLinks       BatchStudent[]
+  enrollments      Enrollment[]
+  attempts         Attempt[]
+  lessonProgress   LessonProgress[]
+  certificates     Certificate[]
+  approvalRequests ApprovalRequest[]        @relation("LearnerApprovals")
+  reviewedApprovals ApprovalRequest[]       @relation("ReviewerApprovals")
+  auditLogs        AuditLog[]
+  authoredCourses  Course[]                 @relation("CourseAuthor")
+}
+
+model OrganizationMembership {
+  id            String         @id @default(cuid())
+  organizationId String
+  userId        String
+  roleInOrg     MembershipRole
+  approvedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId, roleInOrg])
+}
+
+model Batch {
+  id             String           @id @default(cuid())
+  organizationId String
+  name           String
+  startDate      DateTime?
+  endDate        DateTime?
+  status         String           @default("ACTIVE")
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  students       BatchStudent[]
+  assignments    CourseAssignment[]
+}
+
+model BatchStudent {
+  id      String @id @default(cuid())
+  batchId String
+  userId  String
+  batch   Batch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, userId])
+}
+
+model Track {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  courses     Course[]
+  questions   Question[]
+}
+
+model Course {
+  id               String            @id @default(cuid())
+  trackId          String
+  title            String
+  slug             String            @unique
+  description      String?
+  level            String?
+  thumbnail        String?
+  isPublished      Boolean           @default(false)
+  createdById      String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  track            Track             @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  createdBy        User?             @relation("CourseAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  modules          Module[]
+  questions        Question[]
+  exams            Exam[]
+  assignments      CourseAssignment[]
+  enrollments      Enrollment[]
+  certificates     Certificate[]
+  approvalRequests ApprovalRequest[]
+}
+
+model Module {
+  id         String    @id @default(cuid())
+  courseId   String
+  title      String
+  sortOrder  Int
+  createdAt  DateTime  @default(now())
+  course     Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons    Lesson[]
+}
+
+model Lesson {
+  id              String         @id @default(cuid())
+  moduleId        String
+  title           String
+  slug            String         @unique
+  contentHtml     String?
+  videoUrl        String?
+  durationMinutes Int?
+  sortOrder       Int
+  isPreview       Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  module          Module         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quiz            Quiz?
+  questionLinks   Question[]
+  progress        LessonProgress[]
+}
+
+model Quiz {
+  id           String    @id @default(cuid())
+  lessonId      String    @unique
+  title        String
+  passingScore Int
+  maxAttempts  Int
+  createdAt    DateTime  @default(now())
+  lesson       Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  attempts     Attempt[]
+}
+
+model Exam {
+  id                 String            @id @default(cuid())
+  courseId           String
+  title              String
+  durationMinutes    Int
+  passingScore       Int
+  totalQuestions     Int
+  randomizeQuestions Boolean           @default(true)
+  maxAttempts        Int               @default(1)
+  requiresApproval   Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  course             Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questionMap        ExamQuestionMap[]
+  attempts           Attempt[]
+}
+
+model Question {
+  id              String          @id @default(cuid())
+  trackId         String?
+  courseId        String?
+  lessonId        String?
+  type            QuestionType
+  questionTextMm  String
+  explanationMm   String?
+  difficulty      String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  track           Track?          @relation(fields: [trackId], references: [id], onDelete: SetNull)
+  course          Course?         @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lesson          Lesson?         @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  options         QuestionOption[]
+  examMap         ExamQuestionMap[]
+  answers         Answer[]
+}
+
+model QuestionOption {
+  id           String   @id @default(cuid())
+  questionId   String
+  optionTextMm String
+  isCorrect    Boolean  @default(false)
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedAnswers Answer[]
+}
+
+model ExamQuestionMap {
+  id         String   @id @default(cuid())
+  examId      String
+  questionId  String
+  marks      Int      @default(1)
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, questionId])
+}
+
+model CourseAssignment {
+  id             String       @id @default(cuid())
+  organizationId String
+  batchId        String?
+  courseId       String
+  assignedById   String?
+  assignedAt     DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  batch          Batch?       @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Enrollment {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  courseId       String
+  status         EnrollmentStatus @default(PENDING)
+  progressPercent Int             @default(0)
+  completedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId, courseId])
+}
+
+model LessonProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  lessonId      String
+  isCompleted   Boolean   @default(false)
+  watchedPercent Int      @default(0)
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson        Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+}
+
+model Attempt {
+  id             String         @id @default(cuid())
+  organizationId String
+  userId         String
+  quizId         String?
+  examId         String?
+  startedAt      DateTime       @default(now())
+  submittedAt    DateTime?
+  score          Float?
+  passFail       Boolean?
+  timeSpentSec   Int?
+  status         AttemptStatus  @default(IN_PROGRESS)
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz           Quiz?          @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  exam           Exam?          @relation(fields: [examId], references: [id], onDelete: SetNull)
+  answers        Answer[]
+  approvalRequest ApprovalRequest?
+}
+
+model Answer {
+  id               String          @id @default(cuid())
+  attemptId        String
+  questionId       String
+  selectedOptionId String?
+  answerText       String?
+  isCorrect        Boolean?
+  marksAwarded     Float?
+  attempt          Attempt         @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question         Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption   QuestionOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+}
+
+model ApprovalRequest {
+  id             String      @id @default(cuid())
+  organizationId String
+  learnerId      String
+  attemptId      String      @unique
+  courseId       String
+  reviewerId     String?
+  notes          String?
+  status         String      @default("PENDING")
+  createdAt      DateTime    @default(now())
+  decidedAt      DateTime?
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  learner        User        @relation("LearnerApprovals", fields: [learnerId], references: [id], onDelete: Cascade)
+  reviewer       User?       @relation("ReviewerApprovals", fields: [reviewerId], references: [id], onDelete: SetNull)
+  attempt        Attempt     @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  course         Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Certificate {
+  id               String            @id @default(cuid())
+  organizationId   String
+  userId           String
+  courseId         String
+  certificateNo    String            @unique
+  pdfUrl           String?
+  status           CertificateStatus @default(PENDING_APPROVAL)
+  approvedById     String?
+  approvedAt       DateTime?
+  verificationSlug String            @unique
+  issuedAt         DateTime?
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId, courseId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId     String
+  action     String
+  entityType String
+  entityId   String
+  metadataJson Json?
+  createdAt  DateTime @default(now())
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+}
