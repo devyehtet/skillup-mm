@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { authenticateAdmin } from "@/lib/auth";
-import { ADMIN_COOKIE_NAME, encodeAdminCookie, LEARNER_COOKIE_NAME } from "@/lib/session";
+import { ADMIN_COOKIE_NAME, encodeAdminCookie } from "@/lib/session";
 
 function readValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -28,10 +28,6 @@ export async function loginAdmin(formData: FormData) {
     maxAge: 60 * 60 * 24 * 30,
     path: "/",
     sameSite: "lax",
-  });
-  cookieStore.set(LEARNER_COOKIE_NAME, "", {
-    expires: new Date(0),
-    path: "/",
   });
 
   redirect("/admin");
