@@ -1,8 +1,14 @@
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { saveRegisteredLearner } from "@/lib/registered-learners";
-import { encodeLearnerCookie, LEARNER_COOKIE_NAME } from "@/lib/session";
+import {
+  appendRegisteredLearnerToBrowserCache,
+  encodeLearnerCookie,
+  LEARNER_COOKIE_NAME,
+  REGISTERED_LEARNERS_CACHE_COOKIE_NAME,
+} from "@/lib/session";
 import type { RegisteredLearner } from "@/types";
 
 interface RegisterPayload {
@@ -18,6 +24,7 @@ function normalizeValue(value?: string) {
 }
 
 export async function POST(request: Request) {
+  const cookieStore = await cookies();
   const payload = (await request.json()) as RegisterPayload;
 
   const learner: RegisteredLearner = {
@@ -47,6 +54,16 @@ export async function POST(request: Request) {
     path: "/",
     sameSite: "lax",
   });
+  response.cookies.set(
+    REGISTERED_LEARNERS_CACHE_COOKIE_NAME,
+    appendRegisteredLearnerToBrowserCache(cookieStore.get(REGISTERED_LEARNERS_CACHE_COOKIE_NAME)?.value, learner),
+    {
+      httpOnly: true,
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      sameSite: "lax",
+    },
+  );
 
   return response;
 }

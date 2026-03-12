@@ -5,7 +5,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { saveRegisteredLearner } from "@/lib/registered-learners";
-import { encodeLearnerCookie, LEARNER_COOKIE_NAME, normalizeReturnPath } from "@/lib/session";
+import {
+  appendRegisteredLearnerToBrowserCache,
+  encodeLearnerCookie,
+  LEARNER_COOKIE_NAME,
+  normalizeReturnPath,
+  REGISTERED_LEARNERS_CACHE_COOKIE_NAME,
+} from "@/lib/session";
 import type { RegisteredLearner } from "@/types";
 
 export interface RegisterActionState {
@@ -61,6 +67,19 @@ export async function registerLearner(
     path: "/",
     sameSite: "lax",
   });
+  cookieStore.set(
+    REGISTERED_LEARNERS_CACHE_COOKIE_NAME,
+    appendRegisteredLearnerToBrowserCache(
+      cookieStore.get(REGISTERED_LEARNERS_CACHE_COOKIE_NAME)?.value,
+      learner,
+    ),
+    {
+      httpOnly: true,
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+      sameSite: "lax",
+    },
+  );
 
   redirect(requestedPath === "/register" ? "/mock-exams" : requestedPath);
 }

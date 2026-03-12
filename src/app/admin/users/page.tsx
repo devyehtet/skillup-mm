@@ -1,9 +1,10 @@
 import AdminUsersTable from "@/components/AdminUsersTable";
 import SectionTitle from "@/components/SectionTitle";
 import Subnav from "@/components/Subnav";
+import { formatRegisteredLearnerRow, normalizeLearnerEmail } from "@/lib/registered-learner-utils";
 import { adminUserColumns } from "@/lib/mock-data";
 import { getAdminUserRows } from "@/lib/registered-learners";
-import { requireSuperAdmin } from "@/lib/session";
+import { getCachedRegisteredLearners, requireSuperAdmin } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,10 @@ const adminNav = [
 
 export default async function AdminUsersPage() {
   await requireSuperAdmin();
-  const adminRows = await getAdminUserRows();
+  const [adminRows, cachedLearners] = await Promise.all([getAdminUserRows(), getCachedRegisteredLearners()]);
+  const cachedRows = cachedLearners.map(formatRegisteredLearnerRow);
+  const cachedEmails = new Set(cachedRows.map((row) => normalizeLearnerEmail(row.email ?? "")));
+  const mergedRows = [...cachedRows, ...adminRows.filter((row) => !cachedEmails.has(normalizeLearnerEmail(row.email ?? "")))];
 
   return (
     <div className="container-shell py-16">
@@ -32,7 +36,7 @@ export default async function AdminUsersPage() {
         <Subnav items={adminNav} currentHref="/admin/users" />
       </div>
       <div className="mt-10">
-        <AdminUsersTable title="Platform users" columns={adminUserColumns} rows={adminRows} />
+        <AdminUsersTable title="Platform users" columns={adminUserColumns} rows={mergedRows} />
       </div>
     </div>
   );
